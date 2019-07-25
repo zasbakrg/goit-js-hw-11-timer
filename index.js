@@ -1,80 +1,79 @@
+'use strict';
 class CountdownTimer {
   constructor({ selector, targetDate }) {
-    this.selector = document.querySelector(selector);
-    this.targetDate = targetDate;
-    this.refs = {
-      days: this.selector.querySelector('[data-value="days"]'),
-      hours: this.selector.querySelector('[data-value="hours"]'),
-      mins: this.selector.querySelector('[data-value="mins"]'),
-      secs: this.selector.querySelector('[data-value="secs"]')
-    };
-    this.start();
+    this.timer = document.querySelector(selector);
+    this.targetTime = targetDate.getTime();
+    this.printTargetDate(targetDate);
+    this.setTimer();
   }
 
-  start() {
-    let dateNow = Date.now();
-    if (this.checkDate(dateNow)) {
-      return;
-    }
-    this.math(dateNow);
-    this.timer = setInterval(() => {
-      dateNow = Date.now();
-      if (this.checkDate(dateNow)) {
-        this.stop();
-        return;
-      }
-      this.math(dateNow);
+  printTargetDate(targetDate) {
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    };
+
+    const elem = this.timer.querySelector('.js-target-date');
+    const localeUk = targetDate.toLocaleString('en-US', options);
+    elem.textContent = localeUk;
+  }
+
+  setTimer() {
+    this.setCountDown();
+    this.intervalId = setInterval(() => {
+      this.setCountDown();
     }, 1000);
   }
 
-  checkDate(dateNow) {
-    return dateNow >= this.targetDate.getTime();
+  setCountDown() {
+    const currentTime = Date.now();
+    this.deltaTime = this.targetTime - currentTime;
+    const isTargetTimeNow = this.deltaTime < 1;
+
+    if (isTargetTimeNow) {
+      clearInterval(this.intervalId);
+    }
+
+    this.countTimeLeft(this.deltaTime);
   }
 
-  math(date) {
-    const time = this.targetDate - date;
-    /*
-     * Оставшиеся дни: делим значение UTC на 1000 * 60 * 60 * 24, количество
-     * миллисекунд в одном дне (миллисекунды * секунды * минуты * часы)
-     */
+  countTimeLeft(time) {
     const days = Math.floor(time / (1000 * 60 * 60 * 24));
+    const hours = this.pad(
+      Math.floor((time % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    );
+    const mins = this.pad(Math.floor((time % (1000 * 60 * 60)) / (1000 * 60)));
+    const secs = this.pad(Math.floor((time % (1000 * 60)) / 1000));
 
-    /*
-     * Оставшиеся часы: получаем остаток от предыдущего расчета с помощью оператора
-     * остатка % и делим его на количество миллисекунд в одном часе
-     * (1000 * 60 * 60 = миллисекунды * минуты * секунды)
-     */
-    const hours = Math.floor((time % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-    /*
-     * Оставшиеся минуты: получаем оставшиеся минуты и делим их на количество
-     * миллисекунд в одной минуте (1000 * 60 = миллисекунды * секунды)
-     */
-    const mins = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
-
-    /*
-     * Оставшиеся секунды: получаем оставшиеся секунды и делим их на количество
-     * миллисекунд в одной секунде (1000)
-     */
-    const secs = Math.floor((time % (1000 * 60)) / 1000);
-    this.updateClockface(days, hours, mins, secs);
+    this.printTimeLeft(days, hours, mins, secs);
   }
 
-  stop() {
-    clearInterval(this.timer);
-  }
-
-  updateClockface(...args) {
-    args.map((e, i) => {
-      Object.values(this.refs)[i].textContent = this.pad(e);
-    });
-  }
   pad(value) {
-    return String(value).padStart(2, "0");
+    return String(value).padStart(2, '0');
+  }
+
+  printTimeLeft(days, hours, mins, secs) {
+    const daysSpan = this.timer.querySelector('span[data-value="days"]');
+    const hoursSpan = this.timer.querySelector('span[data-value="hours"]');
+    const minsSpan = this.timer.querySelector('span[data-value="mins"]');
+    const secsSpan = this.timer.querySelector('span[data-value="secs"]');
+
+    daysSpan.textContent = days;
+    hoursSpan.textContent = hours;
+    minsSpan.textContent = mins;
+    secsSpan.textContent = secs;
+
+    // А если уверен в разметке, то можно и так:
+
+    // const dateElems = this.timer.querySelectorAll('.value');
+    // [...dateElems].forEach((elem, i) => {
+    //   elem.textContent = arguments[i];
+    // });
   }
 }
 
-const timer = new CountdownTimer({
-  selector: "#timer-1",
-  targetDate: new Date("2019-07-06T00:47:50")
+new CountdownTimer({
+  selector: '#timer-1',
+  targetDate: new Date('Jan 1, 2020'),
 });
